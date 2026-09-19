@@ -1,0 +1,7 @@
+flask
+line-bot-sdk
+gunicorn
+groq
+psycopg2-binary
+sentence-transformers
+python-dotenv
