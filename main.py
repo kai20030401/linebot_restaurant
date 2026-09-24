@@ -1,7 +1,7 @@
 import os
 import json
 
-from datetime import datetime, time
+from datetime import datetime
 from zoneinfo import ZoneInfo
 from flask import Flask, request, abort
 from dotenv import load_dotenv
@@ -29,9 +29,6 @@ from database import (
     get_menu_items,
     search_restaurant_documents
 )
-
-#dotenv_path = os.path.join(os.path.dirname(__file__), '.gitignore', '.env')
-#load_dotenv(dotenv_path, override=True) #本機開發使用這個抓取env檔
 
 load_dotenv()
 app = Flask(__name__)
@@ -118,8 +115,7 @@ def simple_chatbot(message):
     message = message.lower()
 
     # 明確結構化問題
-    if ("地址" in message
-        or "google maps" in message):
+    if "地址" in message:
         restaurant = get_restaurant_info(RESTAURANT_ID)
 
         if restaurant:
@@ -132,8 +128,7 @@ def simple_chatbot(message):
 
         return "目前找不到餐廳資料。", []
 
-    if ("聯絡電話" in message
-        or "連絡電話" in message):
+    if "聯絡電話" in message:
         restaurant = get_restaurant_info(RESTAURANT_ID)
 
         if restaurant:
@@ -144,10 +139,9 @@ def simple_chatbot(message):
 
         return "目前找不到電話資訊。", []
 
-    if ("facebook" in message
+    if ("Facebook" in message
         or "fb" in message
-        or "臉書" in message
-        or "粉絲專頁" in message):
+        or "臉書" in message):
 
         if FACEBOOK_URL:
             return (
@@ -168,33 +162,30 @@ def simple_chatbot(message):
 
         return "目前沒有官方網站資訊。", []
 
-    if ("現在有開嗎" in message
-        or "現在開嗎" in message
-        or "現在營業嗎" in message
-        or "現在有營業嗎" in message
-        or "現在有沒有開" in message
-        or "目前有開嗎" in message
-        or "目前營業嗎" in message
-        or "現在休息嗎" in message
-        or "幾點開" in message
-        or "幾點關" in message):
+    if "菜單" in message:
+            return get_menu_reply(), []
+
+    
+    # 先用 Groq 判斷是否詢問營業狀態或時間
+    classification = classify_message(message)
+    intent = classification.get("intent", "general")
+
+    # 目前是否營業
+    if intent == "open_status":
         return get_current_status_reply(), []
 
-    if "營業時間" in message:
+    # 餐廳營業時間
+    if intent == "business_hours":
         return get_hours_reply(), []
 
-    if "菜單" in message:
-        return get_menu_reply(), []
-
-    # 其他問題 → LLM Intent + RAG
-    return rag_chatbot(message)
+    # 其他問題 →  RAG + LLM
+    return rag_chatbot(message, classification)
 
 
 # RAG + Groq LLM
-def rag_chatbot(user_message):
+def rag_chatbot(user_message, classification):
 
-    # 1. LLM 判斷使用者意圖
-    classification = classify_message(user_message)
+    # 1. 取得 intent, sentiment
     intent = classification.get("intent", "general")
     sentiment = classification.get("sentiment", "neutral")
     
@@ -215,19 +206,13 @@ def rag_chatbot(user_message):
 
         if item in allowed_search_types:
             search_types.append(item)
-
-    # 如果 LLM 沒有回傳有效的 search_types
-    '''
-    if not search_types:
-        search_types = [
-            "feature",
-            "menu_item",
-        ]'''
-
+    
     print("Intent：", intent)
     print("Sentiment：", sentiment)
     print("Search Types：", search_types)
-    
+
+    if not search_types:
+        return ("我目前無法確定你想查詢哪一類資訊，", [])
 
     # 3. 問題 Embedding
     query_embedding = create_embedding(user_message)
@@ -499,6 +484,13 @@ def get_menu_reply():
 
     return result
 
+'''
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
+'''
 
+
+# 佈署程式用這個
 if __name__ == "__main__":
     app.run(debug=True)
+
