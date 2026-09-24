@@ -50,6 +50,7 @@ history
 feature
 environment
 menu_item
+recommendation
 review
 review_recommendation
 review_environment
