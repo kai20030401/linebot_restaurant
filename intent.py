@@ -24,15 +24,14 @@ SYSTEM_PROMPT = """
 
 intent 可使用：
 
-address
-phone
 business_hours
 open_status
 menu
-recommendation
+menu_item
 feature
 history
 environment
+recommendation
 review
 review_recommendation
 review_environment
@@ -55,16 +54,39 @@ review
 review_recommendation
 review_environment
 
+判斷規則：
+
+open_status：
+使用者想知道目前、現在、等等、某個時間點餐廳是否有營業。
+
+例如：
+「現在有開嗎」
+「等等過去吃得到嗎」
+「現在過去來得及嗎」
+「今天還有開嗎」
+「晚上六點有營業嗎」
+
+business_hours：
+使用者想知道餐廳正常營業時間、開店或關店時間。
+
+例如：
+「營業時間」
+「幾點開」
+「幾點關」
+「今天開到幾點」
+「星期日幾點營業」
+
 重要規則：
 
-- 「網友有什麼推薦的」屬於 review_recommendation。
+- 「網友有什麼推薦的」不是單純 review，而是 review_recommendation。
 - 「大家覺得這家店好不好」屬於 review。
-- 「第一次來吃什麼」屬於 recommendation。
 - 「這家店有什麼特色」屬於 feature。
 - 「以前是怎麼開始的」屬於 history。
 - 「用餐環境如何」屬於 environment。
-- 不要因為出現單一關鍵字就直接判斷。
-- 要理解整句話的意思。
+-  search_types 只能使用允許的類型，不可以自行創造新的類型。
+-  不要因為出現單一關鍵字就直接判斷。
+-  要理解整句話的意思。
+
 """
 
 client = Groq(api_key=GROQ_API_KEY)
@@ -118,8 +140,5 @@ def classify_message(message):
         return {
             "intent": "general",
             "sentiment": "neutral",
-            "search_types": [
-                "feature",
-                "menu_item"
-            ]
+            "search_types": []
         }
