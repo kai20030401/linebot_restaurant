@@ -195,6 +195,7 @@ def rag_chatbot(user_message, classification):
         "feature",
         "environment",
         "menu_item",
+        "recommendation",
         "review",
         "review_recommendation",
         "review_environment"
